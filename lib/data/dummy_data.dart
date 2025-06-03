@@ -1,7 +1,8 @@
 import 'package:shoppinglistapp/models/grocery_item.dart';
+import 'package:shoppinglistapp/models/category.dart';
 import 'package:shoppinglistapp/data/categories.dart';
 
-const groceryItems = [
+final groceryItems = [
   GroceryItem(
       id: 'a',
       name: 'Milk',

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:shoppinglistapp/models/category.dart';
 
 class GroceryItem {
@@ -12,6 +11,6 @@ class GroceryItem {
   final String id;
   final String name;
   final int quantity;
-  final Categories category;
+  final Category category;
 
 }
