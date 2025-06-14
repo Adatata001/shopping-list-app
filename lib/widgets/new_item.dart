@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:shoppinglistapp/data/categories.dart';
+import 'package:http/http.dart' as http;
+import 'package:shoppinglistapp/models/category.dart';
+import 'package:shoppinglistapp/models/grocery_item.dart';
+
+
 
 
 
@@ -13,11 +19,48 @@ class NewItem extends StatefulWidget {
 class _NewItemState extends State<NewItem> {
   final _formKey = GlobalKey<FormState>();
   var _enteredName = '';
-  var _enteredQ
+  var _enteredQuantity = 1;
+  var _selectedCategory = categories[Categories.vegetables]!;
+  var _isSending = false;
 
-  void _saveItem () {
+
+  void _saveItem () async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      setState(() {
+        _isSending = true;
+      });
+      final url = Uri.https(
+        'shopping-list-92c05-default-rtdb.firebaseio.com', 'shopping-list.json');
+      final response = await http.post(
+        url,
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: json.encode(
+          {
+           'name': _enteredName,
+           'quantity': _enteredQuantity,
+           'category': _selectedCategory.title,
+          }
+        ),
+      );
+
+      final Map<String, dynamic> resData = json.decode(response.body);
+
+
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop(
+        GroceryItem(
+          id: resData['name'],
+          name: _enteredName,
+          quantity: _enteredQuantity,
+          category: _selectedCategory
+        ),
+     );
     }
   }
 
@@ -60,7 +103,7 @@ class _NewItemState extends State<NewItem> {
                         label: Text('Quantity'),
                       ),
                       keyboardType: TextInputType.numberWithOptions(),
-                      initialValue: '1',
+                      initialValue: _enteredQuantity.toString(),
                       validator: (value) {
                         if (value == null ||
                         value.isEmpty ||
@@ -69,12 +112,16 @@ class _NewItemState extends State<NewItem> {
                           return 'Must be a valid positive number';
                         }
                         return null;
+                      },
+                      onSaved: (value) {
+                       _enteredQuantity = int.parse(value!);
                       }
                     ),
                   ),
                   SizedBox(width: 8),
                   Expanded(
                     child: DropdownButtonFormField(
+                      value: _selectedCategory,
                       items: [
                         for(final category in categories.entries)
                           DropdownMenuItem(
@@ -92,7 +139,11 @@ class _NewItemState extends State<NewItem> {
                             ),
                           ),
                       ],
-                      onChanged: (value) {}
+                      onChanged: (value) {
+                       setState(() {
+                         _selectedCategory = value!;
+                       }); 
+                      },
                     ),
                   ),
                 ],
@@ -102,14 +153,24 @@ class _NewItemState extends State<NewItem> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: () {
-                      _formKey.currentState!.reset();
-                    },
+                    onPressed: _isSending 
+                      ? null 
+                      : () {
+                        _formKey.currentState!.reset();
+                      },
                     child: Text('Reset'),
                   ),
                   ElevatedButton(
-                    onPressed: _saveItem,
-                    child: Text('Add Item'),
+                    onPressed:_isSending 
+                      ? null 
+                      : _saveItem,
+                    child: _isSending
+                     ? SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(),
+                     )
+                    : Text('Add Item'),
                   ),
                 ],
               ),
